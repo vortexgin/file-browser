@@ -20,147 +20,68 @@
         <![endif]-->
     </head>
     <body>
-        <ul class="list-group">
-            {% for dir,path in dirs %}
-                <li>
-                    <a href="javascript: scandir('{{ path }}');">{{ dir }}</a>
-                </li>
-            {% endfor %}
-            {% for file,path in files %}
-                <li>
-                    <a href="javascript: pick('{{ path }}');">{{ file }}</a>
-                    <div class="pull-right">
-                        <a href="{{ path('vortexgin_filebrowser_api_download') }}?file={{ path }}" target="_blank">Download</a> | 
-                        <a href="#">Rename</a> | 
-                        <a href="#">Remove</a>
-                    </div>
-                </li>
-            {% endfor %}
-        </ul>
-
+        <div class="container">
+            <h1>FOS CKEditor Gallery Picker</h1>
+            <ul class="list-group">
+                {% for dir,path in dirs %}
+                    <li class="list-group-item">
+                        <a href="javascript: scandir('{{ path }}');">{{ dir }}</a>
+                    </li>
+                {% endfor %}
+                {% for file,path in files %}
+                    <li class="list-group-item">
+                        <a href="javascript: pick('{{ path }}');">{{ file }}</a>
+                        <div class="pull-right">
+                            <a href="javascript: download('{{ path }}');">Download</a>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
         <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
         <!-- Latest compiled and minified JavaScript -->
         <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <script src="https://minerva.dailysocial.id/bundles/vortexgincore/js/general.js"></script>
+        <script src="https://minerva.dailysocial.id/bundles/vortexgincore/js/object.js"></script>
+        <script src="https://minerva.dailysocial.id/bundles/vortexgincore/js/url.js"></script>
+        <script src="https://minerva.dailysocial.id/bundles/vortexgincore/js/bridge.js"></script>
         <script language="javascript">
             function structure(structure){
                 html = '';
                 Object.keys(structure.dirs).forEach(function(key){
-                        html += '<li>';
+                        html += '<li class="list-group-item">';
                             html += '<a href="javascript: scandir(\''+ structure.dirs[key] +'\');">'+ key +'</a>';
                         html += '</li>';
                 });
                 Object.keys(structure.files).forEach(function(key){
-                        html += '<li>';
-                            html += '<a href="javascript: pick(\''+ structure.dirs[key] +'\');">'+ key +'</a>';
+                        html += '<li class="list-group-item">';
+                            html += '<a href="javascript: pick(\''+ structure.files[key] +'\');">'+ key +'</a>';
                             html += '<div class="pull-right">';
-                                html += '<a href="{{ path('vortexgin_filebrowser_api_download') }}?file='+ structure.dirs[key] +'" target="_blank">Download</a> | ';
-                                html += '<a href="#">Rename</a> | ';
-                                html += '<a href="#">Remove</a>';
+                                html += '<a href="javascript: download(\''+ structure.files[key] +'\');"" target="_blank">Download</a>';
                             html += '</div>';
                         html += '</li>';
                 });
+                $('ul').html(html);
             }
             function scandir(path){
-                Bridge.requestAction('{{ path('vortexgin_filebrowser_api_browse') }}?prefix=' + path, 'GET', {
-                    onSuccess: function(data, textStatus, jqXHR) {
-                        structure(data);
-                        return;
+                Bridge.requestAction('{{ path('vortexgin_filebrowser_api_browse') }}', 'GET', {
+                        prefix: path
+                    }, {
+                        onSuccess: function(data, textStatus, jqXHR) {
+                            structure(data);
+                            return;
+                        }
                     }
-                });
+                );
             }
             function pick(path){
-
+                $("div[name=info]", window.opener.document).find('input:first').val('{{ vortexgin_file_browser_dir }}'+ path);
+                window.close();
             }
-
-            var Bridge = {
-                host: window.location.protocol + '//' + window.location.hostname, 
-                requestAction: function(url, method, param, options, cache) {
-                    if (empty(url)) {
-                        Bridge.errorMessage('Please insert url');
-                    } else if (empty(method)) {
-                        Bridge.errorMessage('Please insert method');
-                    } else {
-                        var def = {
-                            onSuccess: function(data, textStatus, jqXHR) {
-                                return;
-                            },
-                            onFailed: function(jqXHR) {
-                                return;
-                            },
-                            beforeSend: function() {
-                                return;
-                            },
-                            complete: function() {
-                                return;
-                            }
-                        };
-                        $.extend(def, options);
-
-                        var query = Object.toQuery(param),
-                            cacheKey = url,
-                            url = Bridge.host + url;
-                        if (!empty(cache) && cache > 0) {
-                            if (typeof(Storage) !== "undefined") {
-                                if (!empty(query)) {
-                                    if (url.indexOf('?') < 0) {
-                                        cacheKey += '?' + query;
-                                    } else {
-                                        cacheKey += '&' + query;
-                                    }
-                                }
-                                var dataCache = localStorage.getItem(cacheKey);
-                                if (!empty(dataCache)) {
-                                    var data = JSON.parse(dataCache);
-                                    if (Validator.object.validate(data, 'timestamp.date')) {
-                                        var cacheDate = new Date(data.timestamp.date.substr(0, 4), data.timestamp.date.substr(5, 2) - 1, data.timestamp.date.substr(8, 2), data.timestamp.date.substr(11, 2), data.timestamp.date.substr(14, 2), data.timestamp.date.substr(17, 2)),
-                                            now = new Date(),
-                                            diff = (cacheDate - now);
-                                        if (diff > 0) {
-                                            def.onSuccess(data, {}, {});
-                                            return;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        $.ajax({
-                            url: url,
-                            method: method,
-                            data: param,
-                            headers: {
-                                'Access-Control-Allow-Origin': window.location.origin
-                            },
-                            crossDomain: true,
-                            xhrFields: {
-                                withCredentials: true
-                            },
-                            beforeSend: function() {
-                                def.beforeSend();
-                            },
-                            complete: function() {
-                                def.complete();
-                            },
-                            success: function(data, textStatus, jqXHR) {
-                                def.onSuccess(data, textStatus, jqXHR);
-                                if (!empty(cache) && cache > 0) {
-                                    localStorage.setItem(cacheKey, JSON.stringify(data));
-                                }
-                            },
-                            error: function(jqXHR) {
-                                def.onFailed(jqXHR);
-                            }
-                        });
-                    }
-                },
-                successMessage: function(errorMessage) {
-                    toastr['success'](errorMessage);
-                },
-                errorMessage: function(errorMessage) {
-                    toastr['error'](errorMessage);
-                }
-            };
+            function download(path){
+                window.open('{{ path('vortexgin_filebrowser_api_download') }}?file='+ path);
+            }
         </script>
     </body>
 </html>

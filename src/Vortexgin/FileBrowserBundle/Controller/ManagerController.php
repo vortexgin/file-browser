@@ -19,7 +19,7 @@ use Vortexgin\FileBrowserBundle\Utils\FileUtils;
  * @license  Apache 2.0
  * @link     https://github.com/vortexgin/file-browser
  */
-class BridgeController extends Controller
+class ManagerController extends Controller
 {
 
     /**
@@ -32,29 +32,26 @@ class BridgeController extends Controller
     private function _scandir($path)
     {
         $structure = array(
-            'dirs' => array(
-                '..' => '../', 
-            ), 
+            'dirs' => array(), 
             'files' => array(), 
         );
-        $finder = new Finder();
-        $finder->sortByName();
-        $finder->directories()->in($path);
-        if ($finder->hasResults()) {
-            foreach ($finder as $dir) {
-                $structure['dirs'][] = array($dir->getName() => $dir->getRelativePathname());
+
+        $entries = scandir($path);        
+        foreach ($entries as $entry) {
+            if ($entry == '.') {
+                continue;
+            }
+            if ($entry == '..' && $path == $this->container->getParameter('vortexgin.file_browser.dir')) {
+                continue;
+            }
+            $relativePath = str_ireplace($this->container->getParameter('vortexgin.file_browser.dir'), '', realpath($path).'/'.$entry);
+            if (is_dir($path.'/'.$entry)) {
+                $structure['dirs'][$entry] = $relativePath;
+            } else {
+                $structure['files'][$entry] = $relativePath;
             }
         }
-
-        $finder->files()->followLinks();
-        $finder->files()->in($path);
-        if ($finder->hasResults()) {
-            foreach ($finder as $file) {
-                $structure['dirs'][] = array($file->getName() => $file->getRelativePathname());
-            }
-        }
-
-        return $sturcture;
+        return $structure;
     }
     /**
      * File manager page
@@ -69,10 +66,10 @@ class BridgeController extends Controller
         try {
             $structure = $this->_scandir($this->container->getParameter('vortexgin.file_browser.dir'));
 
-            return $this->render('VortexginFileBrowserBundle:Pages:browse.html.twig', $structure);
+            return $this->render('@VortexginFileBrowserBundle/Pages/browse.html.twig', $structure);
         } catch (\Exception $e) {
             var_dump($e->getMessage());
-            return $this->render('VortexginFileBrowserBundle:Pages:error.html.twig', array());
+            return $this->render('@VortexginFileBrowserBundle/Pages/error.html.twig', array());
         }
     }
 
@@ -293,7 +290,7 @@ class BridgeController extends Controller
             $path = $this->container->getParameter('vortexgin.file_browser.dir').$prefix;
 
             $basename = basename($path.$file);
-            $ext = FileUtils::get_mime_type($basename);
+            $ext = FileUtils::getMimeType($basename);
             $content = file_get_contents($path.$file);
 
             $response = new Response();
