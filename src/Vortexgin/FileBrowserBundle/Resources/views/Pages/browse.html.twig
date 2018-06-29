@@ -32,11 +32,29 @@
                     <li class="list-group-item">
                         <a href="javascript: pick('{{ path }}');">{{ file }}</a>
                         <div class="pull-right">
-                            <a href="javascript: download('{{ path }}');">Download</a>
+                            <a href="javascript: download('{{ path }}');" class="small">Download</a> | 
+                            <a href="javascript: remove('{{ path }}');" class="small">Remove</a>
                         </div>
                     </li>
                 {% endfor %}
             </ul>
+            <hr />
+            <div class="col col-xs-12">
+                <form>
+                    <div class="form-group">
+                        <label for="choose_file" style="margin-bottom: 15px;">Add new file</label>
+                        <div class="clearfix"></div>
+                        <div class="col col-xs-8">
+                            <input type="hidden" name="prefix" />
+                            <input type="hidden" name="raw" />
+                            <input type="file" name="choose_file" id="choose_file" class="col col-xs-12" accept="image/*" />
+                        </div>
+                        <div class="col col-xs-4">
+                            <button id="upload" class="btn btn-primary">Upload</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
         <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
@@ -45,22 +63,27 @@
         <script src="https://minerva.dailysocial.id/bundles/vortexgincore/js/general.js"></script>
         <script src="https://minerva.dailysocial.id/bundles/vortexgincore/js/object.js"></script>
         <script src="https://minerva.dailysocial.id/bundles/vortexgincore/js/url.js"></script>
+        <script src="https://minerva.dailysocial.id/bundles/vortexgincore/js/base64.js"></script>
         <script src="https://minerva.dailysocial.id/bundles/vortexgincore/js/bridge.js"></script>
         <script language="javascript">
             function structure(structure){
                 html = '';
                 Object.keys(structure.dirs).forEach(function(key){
-                        html += '<li class="list-group-item">';
-                            html += '<a href="javascript: scandir(\''+ structure.dirs[key] +'\');">'+ key +'</a>';
-                        html += '</li>';
+                    if (key == '..') {
+                        $('input[name=prefix]').val(key.replace('..', ''));
+                    }
+                    html += '<li class="list-group-item">';
+                        html += '<a href="javascript: scandir(\''+ structure.dirs[key] +'\');">'+ key +'</a>';
+                    html += '</li>';
                 });
                 Object.keys(structure.files).forEach(function(key){
-                        html += '<li class="list-group-item">';
-                            html += '<a href="javascript: pick(\''+ structure.files[key] +'\');">'+ key +'</a>';
-                            html += '<div class="pull-right">';
-                                html += '<a href="javascript: download(\''+ structure.files[key] +'\');"" target="_blank">Download</a>';
-                            html += '</div>';
-                        html += '</li>';
+                    html += '<li class="list-group-item">';
+                        html += '<a href="javascript: pick(\''+ structure.files[key] +'\');">'+ key +'</a>';
+                        html += '<div class="pull-right">';
+                            html += '<a href="javascript: download(\''+ structure.files[key] +'\');"" class="small">Download</a> | ';
+                            html += '<a href="javascript: remove(\''+ structure.files[key] +'\');"" class="small">Remove</a>';
+                        html += '</div>';
+                    html += '</li>';
                 });
                 $('ul').html(html);
             }
@@ -82,6 +105,35 @@
             function download(path){
                 window.open('{{ path('vortexgin_filebrowser_api_download') }}?file='+ path);
             }
+            function remove(path){
+                Bridge.requestAction('{{ path('vortexgin_filebrowser_api_remove') }}', 'GET', {
+                        file: path
+                    }, {
+                        onSuccess: function(data, textStatus, jqXHR) {
+                            structure(data);
+                            return;
+                        }
+                    }
+                );
+            }
+            $(document).ready(function(){
+                $('input[name=choose_file]').change(function(){
+                    Base64.convertFile(document.getElementsByName("choose_file")[0], 'input[name=raw]');
+                });
+                $('button#upload').click(function(event){
+                    event.preventDefault();
+                    Bridge.requestAction('{{ path('vortexgin_filebrowser_api_upload') }}', 'POST', {
+                        prefix: $('input[name=prefix]').val(), 
+                        filename: $('input[name=choose_file]').val().split('\\')[$('input[name=choose_file]').val().split('\\').length - 1], 
+                        raw: $('input[name=raw]').val()
+                    }, {
+                        onSuccess: function(data, textStatus, jqXHR) {
+                            structure(data);
+                            return;
+                        }
+                    });
+                });
+            });
         </script>
     </body>
 </html>

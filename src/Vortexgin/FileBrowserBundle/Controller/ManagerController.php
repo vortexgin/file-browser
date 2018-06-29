@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Vortexgin\FileBrowserBundle\Utils\FileUtils;
+use Vortexgin\FileBrowserBundle\Utils\ImageUtils;
 
 /**
  * Manager controller class 
@@ -36,12 +37,12 @@ class ManagerController extends Controller
             'files' => array(), 
         );
 
-        $entries = scandir($path);        
+        $entries = scandir($path);
         foreach ($entries as $entry) {
             if ($entry == '.') {
                 continue;
             }
-            if ($entry == '..' && $path == $this->container->getParameter('vortexgin.file_browser.dir')) {
+            if ($entry == '..' && realpath($path) == $this->container->getParameter('vortexgin.file_browser.dir')) {
                 continue;
             }
             $relativePath = str_ireplace($this->container->getParameter('vortexgin.file_browser.dir'), '', realpath($path).'/'.$entry);
@@ -299,6 +300,42 @@ class ManagerController extends Controller
             $response->setContent($content);
 
             return $response;
+        } catch (\Exception $e) {
+            return new JsonResponse(array(), 417);
+        }
+    }
+
+    /**
+     * API upload
+     * 
+     * @param \Symfony\Component\HttpFoundation\Request $request Http request
+     * 
+     * @return mixed
+     */
+    public function uploadAction(Request $request)
+    {
+        $post = $request->request->all();
+        try {
+            if (!array_key_exists('raw', $post) || empty($post['raw'])) {
+                return new JsonResponse('Please specify file to upload', 400);
+            }
+            $raw = $post['raw'];
+            if (!array_key_exists('filename', $post) || empty($post['filename'])) {
+                return new JsonResponse('Please specify filename', 400);
+            }
+            $filename = $post['filename'];
+            $exp = explode('.', $filename);
+            array_pop($exp);
+            $filename = implode('.', $exp);
+
+            $prefix = array_key_exists('prefix', $post) && !empty($post['prefix'])?$post['prefix']:'';
+            $path = $this->container->getParameter('vortexgin.file_browser.dir').$prefix;
+
+            ImageUtils::uploadBase64Image($post['raw'], $path.'/'.$filename.'_');
+
+            $structure = $this->_scandir($path);
+
+            return new JsonResponse($structure);
         } catch (\Exception $e) {
             return new JsonResponse(array(), 417);
         }

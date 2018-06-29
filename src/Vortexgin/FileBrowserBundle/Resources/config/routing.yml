@@ -29,4 +29,8 @@ vortexgin_filebrowser_api_download:
     path:     /api/download
     defaults: { _controller: VortexginFileBrowserBundle:Manager:download }
     methods:    [GET]
+vortexgin_filebrowser_api_upload:
+    path:     /api/upload
+    defaults: { _controller: VortexginFileBrowserBundle:Manager:upload }
+    methods:    [POST]
     
