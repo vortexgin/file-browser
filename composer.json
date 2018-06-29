@@ -1,0 +1,27 @@
+{
+    "name": "vortexgin/file-browser",
+    "description": "This bundle provides a way to manage file for fosckeditor",
+    "keywords": ["fckeditor", "fos", "file manager", "file browser", "file"],
+    "type": "symfony-bundle",
+    "license": "Apache 2.0",
+    "authors": [
+        {
+            "name": "Tommy Dian P",
+            "email": "vortexgin@gmail.com"
+        }
+    ],
+    "require": {
+        "symfony/asset": "^4.1",
+        "symfony/console": "^4.1",
+        "symfony/framework-bundle": "^4.1",
+        "symfony/twig-bundle": "^4.1",
+        "friendsofsymfony/ckeditor-bundle": "^1.1",
+        "symfony/filesystem": "^4.1", 
+        "symfony/finder": "^4.1"
+    },
+    "autoload": {
+        "psr-4": { 
+            "": "src/" 
+        }
+    }
+}

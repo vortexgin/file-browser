@@ -1,0 +1,32 @@
+vortexgin_filebrowser_manager_browse:
+    path:     /manager/browse
+    defaults: { _controller: VortexginFileBrowserBundle:Manager:viewBrowse }
+vortexgin_filebrowser_api_browse:
+    path:     /api/browse
+    defaults: { _controller: VortexginFileBrowserBundle:Manager:browse }
+    methods:    [GET]
+vortexgin_filebrowser_api_mkdir:
+    path:     /api/mkdir
+    defaults: { _controller: VortexginFileBrowserBundle:Manager:mkdir }
+    methods:    [GET]
+vortexgin_filebrowser_api_copy:
+    path:     /api/copy
+    defaults: { _controller: VortexginFileBrowserBundle:Manager:copy }
+    methods:    [GET]
+vortexgin_filebrowser_api_remove:
+    path:     /api/remove
+    defaults: { _controller: VortexginFileBrowserBundle:Manager:remove }
+    methods:    [GET]
+vortexgin_filebrowser_api_rename:
+    path:     /api/rename
+    defaults: { _controller: VortexginFileBrowserBundle:Manager:rename }
+    methods:    [GET]
+vortexgin_filebrowser_api_chmod:
+    path:     /api/chmod
+    defaults: { _controller: VortexginFileBrowserBundle:Manager:chmod }
+    methods:    [GET]
+vortexgin_filebrowser_api_download:
+    path:     /api/download
+    defaults: { _controller: VortexginFileBrowserBundle:Manager:download }
+    methods:    [GET]
+    

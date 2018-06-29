@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>Vortexgin File Manager</title>
+
+        <!-- Latest compiled and minified CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <!-- Optional theme -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+
+        <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+        <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+        <!--[if lt IE 9]>
+        <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+        <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+        <![endif]-->
+    </head>
+    <body>
+        <ul class="list-group">
+            {% for dir,path in dirs %}
+                <li>
+                    <a href="javascript: scandir('{{ path }}');">{{ dir }}</a>
+                </li>
+            {% endfor %}
+            {% for file,path in files %}
+                <li>
+                    <a href="javascript: pick('{{ path }}');">{{ file }}</a>
+                    <div class="pull-right">
+                        <a href="{{ path('vortexgin_filebrowser_api_download') }}?file={{ path }}" target="_blank">Download</a> | 
+                        <a href="#">Rename</a> | 
+                        <a href="#">Remove</a>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+
+        <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+        <!-- Latest compiled and minified JavaScript -->
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+        <script language="javascript">
+            function structure(structure){
+                html = '';
+                Object.keys(structure.dirs).forEach(function(key){
+                        html += '<li>';
+                            html += '<a href="javascript: scandir(\''+ structure.dirs[key] +'\');">'+ key +'</a>';
+                        html += '</li>';
+                });
+                Object.keys(structure.files).forEach(function(key){
+                        html += '<li>';
+                            html += '<a href="javascript: pick(\''+ structure.dirs[key] +'\');">'+ key +'</a>';
+                            html += '<div class="pull-right">';
+                                html += '<a href="{{ path('vortexgin_filebrowser_api_download') }}?file='+ structure.dirs[key] +'" target="_blank">Download</a> | ';
+                                html += '<a href="#">Rename</a> | ';
+                                html += '<a href="#">Remove</a>';
+                            html += '</div>';
+                        html += '</li>';
+                });
+            }
+            function scandir(path){
+                Bridge.requestAction('{{ path('vortexgin_filebrowser_api_browse') }}?prefix=' + path, 'GET', {
+                    onSuccess: function(data, textStatus, jqXHR) {
+                        structure(data);
+                        return;
+                    }
+                });
+            }
+            function pick(path){
+
+            }
+
+            var Bridge = {
+                host: window.location.protocol + '//' + window.location.hostname, 
+                requestAction: function(url, method, param, options, cache) {
+                    if (empty(url)) {
+                        Bridge.errorMessage('Please insert url');
+                    } else if (empty(method)) {
+                        Bridge.errorMessage('Please insert method');
+                    } else {
+                        var def = {
+                            onSuccess: function(data, textStatus, jqXHR) {
+                                return;
+                            },
+                            onFailed: function(jqXHR) {
+                                return;
+                            },
+                            beforeSend: function() {
+                                return;
+                            },
+                            complete: function() {
+                                return;
+                            }
+                        };
+                        $.extend(def, options);
+
+                        var query = Object.toQuery(param),
+                            cacheKey = url,
+                            url = Bridge.host + url;
+                        if (!empty(cache) && cache > 0) {
+                            if (typeof(Storage) !== "undefined") {
+                                if (!empty(query)) {
+                                    if (url.indexOf('?') < 0) {
+                                        cacheKey += '?' + query;
+                                    } else {
+                                        cacheKey += '&' + query;
+                                    }
+                                }
+                                var dataCache = localStorage.getItem(cacheKey);
+                                if (!empty(dataCache)) {
+                                    var data = JSON.parse(dataCache);
+                                    if (Validator.object.validate(data, 'timestamp.date')) {
+                                        var cacheDate = new Date(data.timestamp.date.substr(0, 4), data.timestamp.date.substr(5, 2) - 1, data.timestamp.date.substr(8, 2), data.timestamp.date.substr(11, 2), data.timestamp.date.substr(14, 2), data.timestamp.date.substr(17, 2)),
+                                            now = new Date(),
+                                            diff = (cacheDate - now);
+                                        if (diff > 0) {
+                                            def.onSuccess(data, {}, {});
+                                            return;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        $.ajax({
+                            url: url,
+                            method: method,
+                            data: param,
+                            headers: {
+                                'Access-Control-Allow-Origin': window.location.origin
+                            },
+                            crossDomain: true,
+                            xhrFields: {
+                                withCredentials: true
+                            },
+                            beforeSend: function() {
+                                def.beforeSend();
+                            },
+                            complete: function() {
+                                def.complete();
+                            },
+                            success: function(data, textStatus, jqXHR) {
+                                def.onSuccess(data, textStatus, jqXHR);
+                                if (!empty(cache) && cache > 0) {
+                                    localStorage.setItem(cacheKey, JSON.stringify(data));
+                                }
+                            },
+                            error: function(jqXHR) {
+                                def.onFailed(jqXHR);
+                            }
+                        });
+                    }
+                },
+                successMessage: function(errorMessage) {
+                    toastr['success'](errorMessage);
+                },
+                errorMessage: function(errorMessage) {
+                    toastr['error'](errorMessage);
+                }
+            };
+        </script>
+    </body>
+</html>
